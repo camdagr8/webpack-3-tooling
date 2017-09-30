@@ -1,3 +1,5 @@
+# Created by .ignore support plugin (hsz.mobi)
+### Node template
 # Logs
 logs
 *.log
@@ -57,3 +59,8 @@ typings/
 # dotenv environment variables file
 .env
 
+# Webstorm project file
+.idea
+
+# Mac thumbnail files
+.DS_Store
