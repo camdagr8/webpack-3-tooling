@@ -4,22 +4,56 @@
 const path                 = require('path');
 const webpack              = require('webpack');
 const fs                   = require('fs-extra');
+const CopyWebpackPlugin    = require('copy-webpack-plugin');
+const GlobEntries          = require('webpack-glob-entries');
 const UglifyJSPlugin       = require('uglifyjs-webpack-plugin');
-const pkg                  = require(__dirname + '/package.json');
+const ExtractTextPlugin    = require('extract-text-webpack-plugin');
 
 // Default configuration
 const config = {
     port         : 9000,
     proxyPort    : 9090,
-    dest         : 'public',
-    src          : 'public/scripts/src',
-    entries      : [
+    dest         : 'dist',
+    scriptDest   : 'public/scripts/',
+    styleDest    : 'public/styles/',
+    app         : [
+        path.resolve(__dirname, 'app')
+    ],
+    scripts      : [
         path.resolve(__dirname, 'public/scripts/src'),
         path.resolve(__dirname, 'public/scripts/src/bundles')
+    ],
+    sass         : [
+        path.resolve(__dirname, 'public/styles/sass')
+    ],
+    less         : [
+        path.resolve(__dirname, 'public/styles/less')
+    ],
+    copyIgnore       : [
+        'node_modules/**/*',
+        '.DS_Store',
+        '.editorconfig',
+        '.env.json',
+        '.git/**/*',
+        '.gitignore',
+        '.idea/**/*',
+        'gulpfile.js',
+        'LICENSE',
+        'package.json',
+        'README.md',
+        '*.config.js',
+        'public/scripts/src/**/*',
+        '**/*.scss',
+        '**/*.less'
     ]
 };
 
 module.exports = (env) => {
+
+    // Clear dest dir
+    if (env.CLEAR) {
+        fs.emptyDirSync(path.resolve(__dirname, config.dest));
+    }
 
     config.port = (env.PORT) ? env.PORT : config.port;
     config.proxyPort = Number(config.port) + 90;
@@ -30,6 +64,7 @@ module.exports = (env) => {
         entry      : {},
         plugins    : [],
         target     : 'node',
+        stats      : 'errors-only',
         node       : {
             console         : false,
             global          : true,
@@ -46,6 +81,10 @@ module.exports = (env) => {
         module     :  {
             rules  : [
                 {
+                    test: /\.(html|ejs)$/,
+                    use: [ 'file-loader?name=[path][name].[ext]!extract-loader!html-loader' ]
+                },
+                {
                     test       : /\.js$/,
                     exclude    : /(node_modules|bower_components)/,
                     use        : {
@@ -55,10 +94,33 @@ module.exports = (env) => {
                             plugins    : ['transform-runtime']
                         }
                     }
+                },
+                {
+                    test       : /\.css$/,
+                    exclude    : /(node_modules|bower_components)/,
+                    loader     : ExtractTextPlugin.extract(['css-loader', 'postcss-loader'])
+                },
+                {
+                    test       : /\.less$/i,
+                    exclude    : /(node_modules|bower_components)/,
+                    loader     : ExtractTextPlugin.extract(['css-loader', 'postcss-loader', 'less-loader'])
+                },
+                {
+                    test       : /\.(sass|scss)$/,
+                    exclude    : /(node_modules|bower_components)/,
+                    loader     : ExtractTextPlugin.extract(['css-loader', 'postcss-loader', 'sass-loader'])
                 }
             ]
         }
     };
+
+    // Style sheets
+    packg.plugins.push(new ExtractTextPlugin({
+        filename: (getPath) => {
+            return getPath('[name].css').replace('.scss', '').replace('.sass', '').replace('.less', '');
+        },
+        allChunks: true
+    }));
 
     // Minify or Source Map
     if (env.NODE_ENV === 'production') {
@@ -68,17 +130,37 @@ module.exports = (env) => {
     }
 
     // Local server
-    if (env.NODE_ENV === 'local') {
+    if (env.WATCH) {
         packg['watch'] = true;
     }
 
-    // Load js entries
-    config.entries.forEach((dir) => {
+    // Load script entries
+    config.scripts.forEach((dir) => {
         let files = fs.readdirSync(dir);
         files.forEach((file) => {
             let filePath = path.resolve(dir, file);
             if (fs.statSync(filePath).isDirectory()) { return; }
-            packg.entry['scripts/' + file] = filePath;
+            packg.entry[config.scriptDest + file] = filePath;
+        });
+    });
+
+    // Load style entries
+    config.sass.forEach((dir) => {
+        let files = fs.readdirSync(dir);
+        files.forEach((file) => {
+            let filePath = path.resolve(dir, file);
+            if (fs.statSync(filePath).isDirectory()) { return; }
+            packg.entry[config.styleDest + file] = filePath;
+        });
+    });
+
+    // Load app entries
+    config.app.forEach((dir) => {
+        let files = fs.readdirSync(dir);
+        files.forEach((file) => {
+            let filePath = path.resolve(dir, file);
+            if (fs.statSync(filePath).isDirectory()) { return; }
+            packg.entry[config.dest + file] = filePath;
         });
     });
 
@@ -98,6 +180,24 @@ module.exports = (env) => {
         }));
 
     } catch (e) {  }
+
+
+    // Add dest dir to ignore list so that
+    // it doesn't copy itself into itself
+    config.copyIgnore.push(config.dest + '/**/*');
+
+    // Copy files to dest
+    packg.plugins.push(new CopyWebpackPlugin(
+        [
+            {
+                from: path.resolve(__dirname),
+                to: path.resolve(__dirname, config.dest),
+            }
+        ],
+        {
+            ignore: config.copyIgnore
+        }
+    ));
 
     return packg;
 };

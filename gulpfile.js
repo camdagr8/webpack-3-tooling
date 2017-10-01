@@ -1,26 +1,39 @@
 'use strict';
 
 const gulp           = require('gulp');
+const path           = require('path');
 const webpack        = require('webpack');
+const fs             = require('fs-extra');
 const env            = require('gulp-env');
+const gutil          = require("gulp-util");
 const config         = require('yargs').argv;
 const nodemon        = require('gulp-nodemon');
 const runSequence    = require('run-sequence');
 const browsersync    = require('browser-sync');
 const pkg            = require(__dirname + '/package.json');
 
+config.env           = (config.env) ? config.env : {};
+
 // Set the port
-const PORT          = Number(config.env.PORT || 8000);
+const PORT           = (config.env.hasOwnProperty('PORT')) ? Number(config.env.PORT) : 8000;
 
-config.port         = PORT;
-config.uiPort       = PORT + 1;
-config.proxyPort    = PORT + 90;
+config.wp            = null;
+config.port          = PORT;
+config.uiPort        = PORT + 1;
+config.proxyPort     = PORT + 90;
+config.dest          = 'dist';
 
+
+// Clear dist dir
+gulp.task('clear', (done) => {
+    fs.emptyDirSync(path.resolve(__dirname, config.dest));
+    done();
+});
 
 // webpack
 const webpackConfig = require(__dirname + '/webpack.config')(config);
 gulp.task('webpack', (done) => {
-    webpack(webpackConfig, (err, stats) => {
+    config.wp = webpack(webpackConfig, (err, stats) => {
         const result = stats.toJson();
         if (result.errors.length) {
             result.errors.forEach((error) => {
@@ -38,15 +51,17 @@ gulp.task('nodemon', (done) => {
     env({
         file: '.env.json',
         vars: {
-            PORT: config.proxyPort
+            PORT: config.port
         }
     });
 
     nodemon({
+        verbose: false,
         watch : config.dest,
+        delay: 500,
         env: {port: config.proxyPort},
         script: __dirname + '/' + pkg.main,
-        ext: 'js ejs json jsx html css scss'
+        ext: 'js jsx json jsx ejs html css less scss png jpg svg gif txt md'
     }).on('start', function () {
         if (!callbackCalled) {
             callbackCalled = true;
@@ -56,6 +71,10 @@ gulp.task('nodemon', (done) => {
         process.exit();
     }).on('restart', function () {
         browsersync.reload();
+
+        setTimeout(() => {
+            console.log('\n[00:00:00] Browser Reloaded!\n')
+        }, 2000);
     });
 });
 
@@ -65,8 +84,8 @@ gulp.task('browsersync', (done) => {
     browsersync({
         notify            : false,
         timestamps        : true,
-        reloadDelay       : 1000,
-        reloadDebounce    : 2000,
+        reloadDelay       : 250,
+        reloadDebounce    : 1000,
         logPrefix         : '00:00:00',
         port              : config.port,
         ui                : {port: config.uiPort},
@@ -76,12 +95,29 @@ gulp.task('browsersync', (done) => {
     done();
 });
 
+gulp.task('watcher', (done) => {
+    let paths = [
+        'webpack.config.js',
+        'postcss.config.js',
+        'public/**/*',
+        'server.js',
+        "app/**/*",
+    ];
+    gulp.watch(paths, ['webpack']);
+
+    done();
+});
+
 // default task
 gulp.task('default', (done) => {
     // run build
     if (config.env.NODE_ENV === 'local') {
-        runSequence(['webpack'], ['nodemon'], () => {
+        runSequence(['clear'], ['webpack'], ['nodemon'], ['watcher'], () => {
             gulp.start('browsersync');
+            done();
+        });
+    } else {
+        runSequence(['clear'], ['webpack'], () => {
             done();
         });
     }
