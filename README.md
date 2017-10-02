@@ -13,7 +13,7 @@ This build script intends to transpile JavaScript files using [Babel](https://ba
 
 
 ## The Build Process
-![Process](https://preview.ibb.co/izNYWG/webpack_3_6_0_tooling.png)
+![Process](https://image.ibb.co/gXRS8w/webpack_3_6_0_tooling.png)
 
 
 _As illustrated above, we use [Gulp](https://gulpjs.com) to initiate the build process._
