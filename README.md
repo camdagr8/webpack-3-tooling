@@ -2,8 +2,9 @@
 
 ## Quick start
 
-1. Run: `npm install`
-2. Run: `npm run serve`
+1. Clone this repo
+2. Run: `npm install`
+3. Run: `npm run serve`
 
 ## How it Works
 
@@ -13,7 +14,7 @@ This build script intends to transpile JavaScript files using [Babel](https://ba
 
 
 ## The Build Process
-![The Build Process](https://image.ibb.co/gXRS8w/webpack_3_6_0_tooling.png)
+<img src="https://image.ibb.co/gXRS8w/webpack_3_6_0_tooling.png" style="width: 100%;"></img>
 
 
 _As illustrated above, we use [Gulp](https://gulpjs.com) to initiate the build process._
