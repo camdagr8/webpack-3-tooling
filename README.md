@@ -59,22 +59,22 @@ Typical `NPM` config file. The only thing of note is that all build packages are
 ```
 .
 app
-   ├─ models
-   ├─ views
-   └─ controllers
-  public
-   ├─ assets
-   ├─ scripts
-   ├─ styles
-   └─ index.html
-  dist
-   ├─ app (copy)
-   ├─ public (copy with transpiled scripts and styles)
-   └─ server.js (copy)
+├─ models
+├─ views
+└─ controllers
+public
+├─ assets
+├─ scripts
+├─ styles
+└─ index.html
+dist
+├─ app (copy)
+├─ public (copy with transpiled scripts and styles)
+└─ server.js (copy)
   node_modules
   gulpfile.js
   package.json
   postcss.config.js
   server.js
   webpack.config.js
-  ```
+```
