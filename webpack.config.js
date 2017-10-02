@@ -5,31 +5,30 @@ const path                 = require('path');
 const webpack              = require('webpack');
 const fs                   = require('fs-extra');
 const CopyWebpackPlugin    = require('copy-webpack-plugin');
-const GlobEntries          = require('webpack-glob-entries');
 const UglifyJSPlugin       = require('uglifyjs-webpack-plugin');
 const ExtractTextPlugin    = require('extract-text-webpack-plugin');
 
-// Default configuration
-const config = {
-    port         : 9000,
-    proxyPort    : 9090,
-    dest         : 'dist',
-    scriptDest   : 'public/scripts/',
-    styleDest    : 'public/styles/',
-    app         : [
+// Default configuration (if no config passed to module.exports)
+const def = {
+    port          : 9000,
+    dest          : 'dist',
+    scriptDest    : 'public/scripts/',
+    styleDest     : 'public/styles/',
+    env           : {'NODE_ENV' : 'local'},
+    app           : [
         path.resolve(__dirname, 'app')
     ],
-    scripts      : [
+    scripts       : [
         path.resolve(__dirname, 'public/scripts/src'),
         path.resolve(__dirname, 'public/scripts/src/bundles')
     ],
-    sass         : [
+    sass          : [
         path.resolve(__dirname, 'public/styles/sass')
     ],
-    less         : [
+    less          : [
         path.resolve(__dirname, 'public/styles/less')
     ],
-    copyIgnore       : [
+    copyIgnore    : [
         'node_modules/**/*',
         '.DS_Store',
         '.editorconfig',
@@ -48,15 +47,23 @@ const config = {
     ]
 };
 
-module.exports = (env) => {
+module.exports = (config) => {
+
+    config = config || def;
+
+    let env = config.env;
+
+    if (!env.hasOwnProperty('NODE_ENV')) {
+        env.NODE_ENV = 'local';
+    }
 
     // Clear dest dir
-    if (env.CLEAR) {
+    if (env.hasOwnProperty('ClEAR')) {
         fs.emptyDirSync(path.resolve(__dirname, config.dest));
     }
 
-    config.port = (env.PORT) ? env.PORT : config.port;
-    config.proxyPort = Number(config.port) + 90;
+    config['port']         = (env.hasOwnProperty('PORT')) ? env.PORT : config.port;
+    config['proxyPort']    = Number(config.port) + 90;
 
     // The Webpack Package
     let packg = {
@@ -130,7 +137,7 @@ module.exports = (env) => {
     }
 
     // Local server
-    if (env.WATCH) {
+    if (env.hasOwnProperty('WATCH')) {
         packg['watch'] = true;
     }
 

@@ -40,5 +40,5 @@ app.listen(port, function () {
         return '['+[hours, minutes, seconds].join(':') + ']';
     };
 
-    console.log(timestamp() + ' Server running on port ' + port);
+    console.log(timestamp() + ' [node] Server running on port ' + port);
 });
